@@ -1,44 +1,141 @@
 /*
-=============================================================
-Data Import into Bronze Layer Tables (Source -> Bronze)
-=============================================================
+===============================================================================
+Stored Procedure: Load Bronze Layer (Source -> Bronze)
+===============================================================================
 Script Purpose:
-    This section explains two standard methods to import CSV data 
-    into the Bronze Layer tables within the 'DataWarehouse_bronze' database.
-    The Bronze layer holds raw data imported directly from source systems.
+    This stored procedure loads data into the 'bronze' schema from external CSV files. 
+    It performs the following actions:
+    - Truncates the bronze tables before loading data.
+    - Uses the `BULK INSERT` command to load data from csv Files to bronze tables.
 
-    Method 1 uses the MySQL Workbench GUI (Import Wizard) — 
-    best suited when working with limited datasets, 
-    but can also efficiently handle larger imports 
-    if the table structure is properly defined.
+Parameters:
+    None. 
+	  This stored procedure does not accept any parameters or return any values.
 
-    Method 2 uses the SQL 'LOAD DATA INFILE' command — 
-    recommended for automation or large-scale data loading.
-
--------------------------------------------------------------
-WARNING:
-    Ensure that the column structure in the CSV files matches the table schema.
-    For 'LOAD DATA INFILE', verify that the MySQL user has appropriate file 
-    access permissions and that the 'secure_file_priv' variable allows the path used.
-=============================================================
+Usage Example:
+    EXEC bronze.load_bronze;
+===============================================================================
 */
+CREATE OR ALTER PROCEDURE bronze.load_bronze AS
+BEGIN
+	DECLARE @start_time DATETIME, @end_time DATETIME, @batch_start_time DATETIME, @batch_end_time DATETIME; 
+	BEGIN TRY
+		SET @batch_start_time = GETDATE();
+		PRINT '================================================';
+		PRINT 'Loading Bronze Layer';
+		PRINT '================================================';
 
-/* =============================================================
-Method 1: Import Using MySQL Workbench (GUI)
-=============================================================
-Steps:
-    1. Open MySQL Workbench and connect to the server.
-    2. Expand the 'DataWarehouse_bronze' database in the Navigator panel.
-    3. Right-click the target table (e.g., 'bronze_crm_cust_info').
-    4. Select "Table Data Import Wizard".
-    5. Browse to the corresponding CSV file (e.g., 'cust_info.csv').
-    6. Click "Next" to review field mappings and import settings.
-    7. Click "Next" again, then "Finish" to execute the import.
-    8. Once complete, verify data:
-            SELECT * FROM bronze_crm_cust_info LIMIT 10;
+		PRINT '------------------------------------------------';
+		PRINT 'Loading CRM Tables';
+		PRINT '------------------------------------------------';
 
-Note:
-    This method automatically handles most permissions and formatting issues.
-    In this project, we use **Method 1 (MySQL Workbench Import Wizard)** 
-    to import the CSV data into the Bronze Layer tables.
-============================================================= */
+		SET @start_time = GETDATE();
+		PRINT '>> Truncating Table: bronze.crm_cust_info';
+		TRUNCATE TABLE bronze.crm_cust_info;
+		PRINT '>> Inserting Data Into: bronze.crm_cust_info';
+		BULK INSERT bronze.crm_cust_info
+		FROM 'C:\sql\dwh_project\datasets\source_crm\cust_info.csv'
+		WITH (
+			FIRSTROW = 2,
+			FIELDTERMINATOR = ',',
+			TABLOCK
+		);
+		SET @end_time = GETDATE();
+		PRINT '>> Load Duration: ' + CAST(DATEDIFF(second, @start_time, @end_time) AS NVARCHAR) + ' seconds';
+		PRINT '>> -------------';
+
+        SET @start_time = GETDATE();
+		PRINT '>> Truncating Table: bronze.crm_prd_info';
+		TRUNCATE TABLE bronze.crm_prd_info;
+
+		PRINT '>> Inserting Data Into: bronze.crm_prd_info';
+		BULK INSERT bronze.crm_prd_info
+		FROM 'C:\sql\dwh_project\datasets\source_crm\prd_info.csv'
+		WITH (
+			FIRSTROW = 2,
+			FIELDTERMINATOR = ',',
+			TABLOCK
+		);
+		SET @end_time = GETDATE();
+		PRINT '>> Load Duration: ' + CAST(DATEDIFF(second, @start_time, @end_time) AS NVARCHAR) + ' seconds';
+		PRINT '>> -------------';
+
+        SET @start_time = GETDATE();
+		PRINT '>> Truncating Table: bronze.crm_sales_details';
+		TRUNCATE TABLE bronze.crm_sales_details;
+		PRINT '>> Inserting Data Into: bronze.crm_sales_details';
+		BULK INSERT bronze.crm_sales_details
+		FROM 'C:\sql\dwh_project\datasets\source_crm\sales_details.csv'
+		WITH (
+			FIRSTROW = 2,
+			FIELDTERMINATOR = ',',
+			TABLOCK
+		);
+		SET @end_time = GETDATE();
+		PRINT '>> Load Duration: ' + CAST(DATEDIFF(second, @start_time, @end_time) AS NVARCHAR) + ' seconds';
+		PRINT '>> -------------';
+
+		PRINT '------------------------------------------------';
+		PRINT 'Loading ERP Tables';
+		PRINT '------------------------------------------------';
+		
+		SET @start_time = GETDATE();
+		PRINT '>> Truncating Table: bronze.erp_loc_a101';
+		TRUNCATE TABLE bronze.erp_loc_a101;
+		PRINT '>> Inserting Data Into: bronze.erp_loc_a101';
+		BULK INSERT bronze.erp_loc_a101
+		FROM 'C:\sql\dwh_project\datasets\source_erp\loc_a101.csv'
+		WITH (
+			FIRSTROW = 2,
+			FIELDTERMINATOR = ',',
+			TABLOCK
+		);
+		SET @end_time = GETDATE();
+		PRINT '>> Load Duration: ' + CAST(DATEDIFF(second, @start_time, @end_time) AS NVARCHAR) + ' seconds';
+		PRINT '>> -------------';
+
+		SET @start_time = GETDATE();
+		PRINT '>> Truncating Table: bronze.erp_cust_az12';
+		TRUNCATE TABLE bronze.erp_cust_az12;
+		PRINT '>> Inserting Data Into: bronze.erp_cust_az12';
+		BULK INSERT bronze.erp_cust_az12
+		FROM 'C:\sql\dwh_project\datasets\source_erp\cust_az12.csv'
+		WITH (
+			FIRSTROW = 2,
+			FIELDTERMINATOR = ',',
+			TABLOCK
+		);
+		SET @end_time = GETDATE();
+		PRINT '>> Load Duration: ' + CAST(DATEDIFF(second, @start_time, @end_time) AS NVARCHAR) + ' seconds';
+		PRINT '>> -------------';
+
+		SET @start_time = GETDATE();
+		PRINT '>> Truncating Table: bronze.erp_px_cat_g1v2';
+		TRUNCATE TABLE bronze.erp_px_cat_g1v2;
+		PRINT '>> Inserting Data Into: bronze.erp_px_cat_g1v2';
+		BULK INSERT bronze.erp_px_cat_g1v2
+		FROM 'C:\sql\dwh_project\datasets\source_erp\px_cat_g1v2.csv'
+		WITH (
+			FIRSTROW = 2,
+			FIELDTERMINATOR = ',',
+			TABLOCK
+		);
+		SET @end_time = GETDATE();
+		PRINT '>> Load Duration: ' + CAST(DATEDIFF(second, @start_time, @end_time) AS NVARCHAR) + ' seconds';
+		PRINT '>> -------------';
+
+		SET @batch_end_time = GETDATE();
+		PRINT '=========================================='
+		PRINT 'Loading Bronze Layer is Completed';
+        PRINT '   - Total Load Duration: ' + CAST(DATEDIFF(SECOND, @batch_start_time, @batch_end_time) AS NVARCHAR) + ' seconds';
+		PRINT '=========================================='
+	END TRY
+	BEGIN CATCH
+		PRINT '=========================================='
+		PRINT 'ERROR OCCURED DURING LOADING BRONZE LAYER'
+		PRINT 'Error Message' + ERROR_MESSAGE();
+		PRINT 'Error Message' + CAST (ERROR_NUMBER() AS NVARCHAR);
+		PRINT 'Error Message' + CAST (ERROR_STATE() AS NVARCHAR);
+		PRINT '=========================================='
+	END CATCH
+END
